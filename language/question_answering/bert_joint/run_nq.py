@@ -1014,16 +1014,19 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
       end_loss = compute_loss(end_logits, end_positions)
       answer_type_loss = compute_label_loss(answer_type_logits, answer_types)
 
-      total_loss = (start_loss + end_loss + answer_type_loss) / 3.0
+      total_loss = (2*start_loss + 2*end_loss + 1*answer_type_loss) / 5.0 #weighted loss 
 
       train_op = optimization.create_optimizer(
           total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
+
+      logging_hook = tf.train.LoggingTensorHook({"total_loss" : total_loss}, every_n_iter=100)
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=total_loss,
           train_op=train_op,
-          scaffold_fn=scaffold_fn)
+          scaffold_fn=scaffold_fn,
+          training_hooks = [logging_hook])
     elif mode == tf.estimator.ModeKeys.PREDICT:
       predictions = {
           "unique_ids": unique_ids,
